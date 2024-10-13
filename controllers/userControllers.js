@@ -1,56 +1,55 @@
-import User from  '../models/user.js'
-import jwt from 'jsonwebtoken'
-import dotenv from  'dotenv'
-import  bcrypt from 'bcryptjs'
-
+import User from '../models/user.js';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
+export function postUsers(req, res) {
+  const user = req.body;
 
-export function postUsers(req,res){
+  const password = req.body.password;
 
-  const user = req.body
+  const saltRounds = 10;
 
-  const password = req.body.password
+  const passwordHash = bcrypt.hashSync(password, saltRounds);
 
-  const saltRound = 10;
-  const passwordHash = bcrypt.hashSync(password, saltRound);
+  console.log(passwordHash);
 
-  user.password = passwordHash
+  user.password = passwordHash;
 
-  const newUser = new User(user)
-  newUser.save().then(
-
-    ()=>{
+  const newUser = new User(user);
+  newUser
+    .save()
+    .then(() => {
       res.json({
-        message : "User created successfully"
-      })
-    }
-  ).catch(
-    ()=>{
+        message: 'User created successfully',
+      });
+    })
+    .catch(() => {
       res.json({
-        message : "User creation failed"
-      })
-    }
-  )
-
+        message: 'User creation failed',
+      });
+    });
 }
 
-export function loginUser(req,res){
-  const credentials = req.body
-  const password = bcrypt.hashSync(credential.password, 10);
+export function loginUser(req, res) {
+  const credentials = req.body;
 
-  User.findOne({email : credentials.email, password :passwordHash}).then(
-    (user)=>{
+  User.findOne({ email: credentials.email }).then((user) => {
 
-      if(user == null){
+    if (user == null) {
+      res.status(403).json({
+        message: 'User not found',
+      });
+    } else {
+      const isPasswordValid = bcrypt.compareSync(credentials.password, user.password);
 
+      if (!isPasswordValid) {
         res.status(403).json({
-          message : "User not found"
-        })
-
-      }else{
-
+          message: 'Incorrect password',
+        });
+      } else {
         const payload = {
           id: user._id,
           email: user.email,
@@ -58,21 +57,45 @@ export function loginUser(req,res){
           lastName: user.lastName,
           type: user.type,
         };
-  
 
-        const token = jwt.sign(payload, "secret", { expiresIn: "48h" });
+        const token = jwt.sign(payload, process.env.JWT_KEY, { expiresIn: '48h' });
 
         res.json({
-          message : "User found",
-          user : user,
-          token : token
-        })
-        
+          message: 'User found',
+          user: user,
+          token: token,
+        });
       }
     }
-  )
+  });
+}
+
+export function isAdminValid(req){
+
+  if(req.user == null){
+    return false
+  }
+  if(req.user.type != "admin"){
+    return false
+  }
+  return true;
+  
+}
+export function isCustomerValid(req){
+
+  if(req.user == null){
+    return false
+  }
+  console.log(req.user)
+  if(req.user.type != "customer"){
+    return false
+  }
+
+  return true;
+  
 }
 
 
-
-
+const email = "kjsdhfkladsf"
+const password = "kljlkslkjlk;kjkl;jsadafklj"
+const name = "sdfads"
